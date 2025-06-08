@@ -1,0 +1,141 @@
+Добавьте текстовое поле (TextBox):
+
+Из "Панели элементов" (Toolbox, обычно слева) перетащите элемент TextBox на Form1.
+Измените его свойство Name (в окне "Свойства") на textBoxDisplay.
+Установите свойство Font на что-то побольше (например, 24pt) для лучшей читаемости.
+Установите свойство TextAlign на Right (выравнивание по правому краю).
+Установите ReadOnly на true, чтобы пользователи не могли вводить текст напрямую.
+Настройте его размер так, чтобы оно занимало всю ширину калькулятора.
+Добавьте кнопки (Button):
+
+Перетащите элементы Button на Form1. Вам понадобится по одной для каждой цифры (0-9), операторов (+, -, *, /), равно (=), очистить (C) и десятичной точки (.).
+Для каждой кнопки:
+Установите свойство Text на цифру или символ, который она представляет (например, "7", "+", "=").
+Установите свойство Name на что-то описательное (например, button7, buttonPlus, buttonEquals, buttonClear, buttonDecimal).
+Настройте Font и размер, чтобы кнопки выглядели привлекательно.
+Расположите кнопки в макете, напоминающем калькулятор (например, сетка для цифр, операторы сбоку). Вы можете использовать TableLayoutPanel из панели элементов для облегчения выравнивания.
+3. Напишите код C# (обработчики событий и логика)
+Дважды щелкните Form1.cs в "Обозревателе решений" (Solution Explorer), чтобы просмотреть код.
+
+Вот упрощенный пример кода C#. Этот пример использует базовую логику для демонстрации. Более надежные калькуляторы будут обрабатывать граничные случаи, проверку ошибок (например, деление на ноль) и приоритет операций.
+
+C#
+
+using System;
+using System.Windows.Forms;
+
+namespace SimpleCalculator
+{
+    public partial class Form1 : Form
+    {
+        double currentValue = 0; // Хранит текущее число, над которым выполняется операция
+        string operation = "";   // Хранит ожидающую операцию (+, -, *, /)
+        bool operationPerformed = false; // Флаг, указывающий, была ли только что нажата кнопка операции
+
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        // Обработчик событий для кнопок с цифрами (0-9 и десятичной точкой)
+        private void button_Number_Click(object sender, EventArgs e)
+        {
+            Button button = (Button)sender;
+
+            // Если операция только что была выполнена или на дисплее "0", очистите дисплей
+            if ((textBoxDisplay.Text == "0") || (operationPerformed))
+            {
+                textBoxDisplay.Clear();
+            }
+
+            operationPerformed = false; // Сбросьте флаг
+
+            // Предотвратить ввод нескольких десятичных точек
+            if (button.Text == ".")
+            {
+                if (!textBoxDisplay.Text.Contains("."))
+                {
+                    textBoxDisplay.Text += button.Text;
+                }
+            }
+            else
+            {
+                textBoxDisplay.Text += button.Text;
+            }
+        }
+
+        // Обработчик событий для кнопок операторов (+, -, *, /)
+        private void button_Operator_Click(object sender, EventArgs e)
+        {
+            Button button = (Button)sender;
+            operation = button.Text; // Сохраните оператор
+
+            currentValue = double.Parse(textBoxDisplay.Text); // Сохраните текущее число
+            operationPerformed = true; // Установите флаг, чтобы очистить дисплей для следующего числа
+        }
+
+        // Обработчик событий для кнопки "Равно" (=)
+        private void buttonEquals_Click(object sender, EventArgs e)
+        {
+            switch (operation)
+            {
+                case "+":
+                    textBoxDisplay.Text = (currentValue + double.Parse(textBoxDisplay.Text)).ToString();
+                    break;
+                case "-":
+                    textBoxDisplay.Text = (currentValue - double.Parse(textBoxDisplay.Text)).ToString();
+                    break;
+                case "*":
+                    textBoxDisplay.Text = (currentValue * double.Parse(textBoxDisplay.Text)).ToString();
+                    break;
+                case "/":
+                    if (double.Parse(textBoxDisplay.Text) != 0)
+                    {
+                        textBoxDisplay.Text = (currentValue / double.Parse(textBoxDisplay.Text)).ToString();
+                    }
+                    else
+                    {
+                        textBoxDisplay.Text = "Ошибка: Деление на ноль";
+                    }
+                    break;
+                default:
+                    // Обработка отсутствия операции или неверной операции
+                    break;
+            }
+            currentValue = double.Parse(textBoxDisplay.Text); // Обновите текущее значение для цепочечных операций
+            operation = ""; // Очистите операцию
+        }
+
+        // Обработчик событий для кнопки "Очистить" (C)
+        private void buttonClear_Click(object sender, EventArgs e)
+        {
+            textBoxDisplay.Text = "0";
+            currentValue = 0;
+            operation = "";
+            operationPerformed = false;
+        }
+    }
+}
+4. Подключите кнопки к обработчикам событий
+Это очень важно! Вам нужно указать каждой кнопке, какой код выполнять при ее нажатии.
+
+Для кнопок с цифрами и десятичной точкой:
+
+Вернитесь к представлению Form1.cs [Design].
+Выделите все кнопки с цифрами (например, button0, button1, ..., button9, buttonDecimal) одновременно.
+В окне "Свойства" (Properties) нажмите значок молнии "События" (Events).
+Найдите событие Click.
+Из выпадающего списка рядом с Click выберите button_Number_Click. Это свяжет все выбранные кнопки с цифрами с одним и тем же обработчиком событий.
+Для кнопок операторов:
+
+Выделите все кнопки операторов (buttonPlus, buttonMinus, buttonMultiply, buttonDivide).
+В окне "Свойства" нажмите значок молнии "События".
+Из выпадающего списка Click выберите button_Operator_Click.
+Для кнопки "Равно":
+
+Выберите buttonEquals.
+Из выпадающего списка Click выберите buttonEquals_Click.
+Для кнопки "Очистить":
+
+Выберите buttonClear.
+Из выпадающего списка Click выберите buttonClear_Click.
