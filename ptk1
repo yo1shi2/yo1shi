@@ -1,42 +1,166 @@
 using Npgsql;
 using System.Data;
 
-namespace WinFormsApp5
-{ 
+namespace WinFormsApp6
+{
     public partial class Form1 : Form
     {
         public Form1()
         {
             InitializeComponent();
+            LoadUserData();
+        }
+        private void LoadUserData()
+        {
+            using (NpgsqlConnection conn = dbconnection.GetConnection())
+            {
+                if (conn == null) return;
+                    string sql = "SELECT UserID, Имя, Фамилия, Email, ДатаРегистрации FROM Пользователи ORDER BY UserID ASC";
+                    using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(sql, conn))
+                    {
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        dataGridViewUsers.DataSource = dt;
+                    }
+            }
         }
 
-        private void btnLoadData_Click(object sender, EventArgs e)
+        private void btnРедактировать_Click(object sender, EventArgs e)
         {
-            NpgsqlConnection conn = null;
-            DataTable dataTable = new DataTable();
-            try
+            if (!int.TryParse(txtUserID.Text, out int userId))
             {
-                conn = dbconnection.GetConnection();
-                if (conn != null)
+            }
+            using (NpgsqlConnection conn = dbconnection.GetConnection())
+            {
+                if (conn == null) return;
+                string sql = "UPDATE Пользователи SET Имя = @Имя, Фамилия = @Фамилия, Email = @Email WHERE UserID = @UserID";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(sql, conn))
                 {
-                    string sqlQuery = "SELECT * FROM Products;";
+                    cmd.Parameters.AddWithValue("Имя", txtИмя.Text);
+                    cmd.Parameters.AddWithValue("Фамилия", txtФамилия.Text);
+                    cmd.Parameters.AddWithValue("Email", txtEmail.Text);
+                    cmd.Parameters.AddWithValue("UserID", userId);
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    ClearInputFields();
+                    LoadUserData();
+                }
+            } 
+        }
 
-                    using (NpgsqlDataAdapter adapter = new NpgsqlDataAdapter(sqlQuery, conn))
-                    {
-                        adapter.Fill(dataTable);
-                    }
-                    dgvData.DataSource = dataTable;
+        private void btnУдалить_Click(object sender, EventArgs e)
+        {
+            if (!int.TryParse(txtUserID.Text, out int userId))
+            {
+            }
+            using (NpgsqlConnection conn = dbconnection.GetConnection())
+            {
+                if (conn == null) return;
+                string sql = "DELETE FROM Пользователи WHERE UserID = @UserID";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(sql, conn))
+                {
+                cmd.Parameters.AddWithValue("UserID", userId);
+                int rowsAffected = cmd.ExecuteNonQuery();
+                ClearInputFields();
+                LoadUserData();
                 }
             }
-            catch (NpgsqlException ex)
-            {
+        }
 
-            }
-            finally
+        private void btnСоздать_Click(object sender, EventArgs e)
+        {
+
+
+            using (NpgsqlConnection conn = dbconnection.GetConnection())
             {
-                conn.Close();
-                conn.Dispose();
+                if (conn == null) return;
+                    string sql = "INSERT INTO Пользователи (Имя, Фамилия, Email) VALUES (@Имя, @Фамилия, @Email)";
+                    using (NpgsqlCommand cmd = new NpgsqlCommand(sql, conn))
+                    {
+                        cmd.Parameters.AddWithValue("Имя", txtИмя.Text);
+                        cmd.Parameters.AddWithValue("Фамилия", txtФамилия.Text);
+                        cmd.Parameters.AddWithValue("Email", txtEmail.Text);
+
+                        int rowsAffected = cmd.ExecuteNonQuery();
+                            ClearInputFields(); // Очистить поля ввода
+                            LoadUserData();    // Обновить DataGridView
+                    }
+            }
+        }
+        private void ClearInputFields()
+        {
+            txtUserID.Clear();
+            txtИмя.Clear();
+            txtФамилия.Clear();
+            txtEmail.Clear();
+        }
+
+        private void dataGridViewUsers_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                DataGridViewRow row = dataGridViewUsers.Rows[e.RowIndex];
+                if (row.Cells["UserID"] != null && row.Cells["UserID"].Value != null)
+                    txtUserID.Text = row.Cells["UserID"].Value.ToString();
+                else
+                    txtUserID.Text = string.Empty;
+                if (row.Cells["Имя"] != null && row.Cells["Имя"].Value != null)
+                    txtИмя.Text = row.Cells["Имя"].Value.ToString();
+                else
+                    txtИмя.Text = string.Empty;
+                if (row.Cells["Фамилия"] != null && row.Cells["Фамилия"].Value != null)
+                    txtФамилия.Text = row.Cells["Фамилия"].Value.ToString();
+                else
+                    txtФамилия.Text = string.Empty;
+                if (row.Cells["Email"] != null && row.Cells["Email"].Value != null)
+                    txtEmail.Text = row.Cells["Email"].Value.ToString();
+                else
+                    txtEmail.Text = string.Empty;
             }
         }
     }
 }
+
+
+
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using Npgsql;
+
+namespace WinFormsApp6
+{
+    public static class dbconnection
+    {
+        public static string ConnectionString = "Host=localhost;Port=5432;Database=2;Username=postgres;Password=1234321";
+
+    public static NpgsqlConnection GetConnection()
+        {
+            NpgsqlConnection conn = null;
+
+            try
+            {
+                conn = new NpgsqlConnection(ConnectionString);
+                conn.Open();
+                Console.WriteLine();
+                return conn;
+            }
+            catch (NpgsqlException ex)
+            {
+                Console.WriteLine($"Ошибка подключения к PostgreSQL: {ex.Message}");
+                return null;
+            }
+        }
+    }
+}
+
+
+CREATE TABLE Пользователи (
+    UserID SERIAL PRIMARY KEY,
+    Имя VARCHAR(50) NOT NULL,
+    Фамилия VARCHAR(50) NOT NULL,
+    Email VARCHAR(100) UNIQUE,
+    ДатаРегистрации TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
